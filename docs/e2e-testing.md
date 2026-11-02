@@ -263,7 +263,13 @@ Markdown 処理系の移行などで「画面での表示が変わらない」�
 - **ブラウザ側**: localhost 以外へのリクエスト（Google Analytics / Partytown など）は `context.route()` で中断し、Service Worker も無効化します。テーマは `localStorage.theme` とシステム配色（`emulateMedia`）の両方で固定します。遅延読み込み画像を eager にして全画像のデコードと `document.fonts.ready` を待ち、読み込めない画像があれば失敗させます。`animations: 'disabled'` を指定します。
 - **フォント**: `tests/e2e/styles/screenshot-pages.css` で本文を `Noto Sans CJK JP`、`code` / `pre` / `kbd` / `samp` を `Noto Sans Mono CJK JP` に固定します。等幅表示を保つことで、コードブロックの崩れも検出できます（どちらも `fonts-noto-cjk` に含まれます）。
 
-記事やタグを追加・変更すると、そのページのベースラインが必要になります。`pnpm run test:e2e:update` でスナップショットを生成し、記事と一緒にコミットしてください。ベースラインは CI（GitHub Actions の ubuntu-latest）の描画が基準です。ローカル（コンテナや macOS）ではアンチエイリアスの差で一致しないことがあるため、その場合は CI の artifact（`test-results/` の actual 画像）でベースラインを更新してください。
+記事やタグを追加・変更すると、そのページのベースラインが必要になります。`pnpm run test:e2e:update` でスナップショットを生成し、記事と一緒にコミットしてください。ベースラインは CI（GitHub Actions の ubuntu-latest）の描画が基準です。ローカル（コンテナや macOS）とはアンチエイリアスが異なるため、ローカルで生成したベースラインは CI で数百ピクセル程度ずれて失敗することがあります。
+
+CI のベースラインへ差し替える手順:
+
+1. ローカルで生成したベースラインをコミットして push し、CI の `e2e` ジョブを失敗させる。
+2. 失敗した実行の `test-results` artifact をダウンロードする。失敗したテストごとに `*-actual.png`（CI での描画結果）が含まれる。
+3. 各 `*-actual.png` を、対応するベースライン（`tests/e2e/specs/visual-pages.spec.ts-snapshots/` 配下の同じ名前のファイル）に上書きコピーしてコミットする。差分がなく成功したベースラインはそのままにする。
 
 ### RSS フィードテスト (`rss.spec.ts`)
 
