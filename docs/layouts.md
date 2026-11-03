@@ -144,13 +144,16 @@ interface Frontmatter {
 
 ### 使用例
 
-`src/pages/posts/` 配下の Markdown では `astro.config.mjs` の remark プラグインにより `MarkdownPostLayout` が自動適用されるため、frontmatter に `layout` を書く必要はありません。個別記事で別レイアウトを使いたい場合は、従来どおり `layout` を明示するとその指定が優先されます。
+記事の Markdown は frontmatter の `layout` で `MarkdownPostLayout` を指定します（自動適用はしません。経緯は `docs/adr/0001-markdown-processor-satteri.md`）。テンプレート `src/pages/posts/template/_blog-post.md`（`init-post` スキルが使う）に書いてあるので、テンプレートから作った記事には最初から入っています。`src/pages/posts/*.md` とテンプレートが `layout` を指定していることは `tests/unit/posts-layout.test.ts` で確認します。
 
-```astro
+`layout` は Astro の表示制御用なので、raw Markdown エンドポイント（`docs/raw-markdown-endpoints.md`）の出力からは除去されます。
+
+```markdown
 ---
-title: 'ブログ記事タイトル';
-tags: ['tech', 'blog'];
-pubDate: '2024-01-01';
+layout: '@layouts/MarkdownPostLayout.astro'
+title: ブログ記事タイトル
+tags: [tech, blog]
+pubDate: 2024-01-01
 ---
 
 # 記事内容 記事本文がここに来ます。
@@ -162,7 +165,7 @@ pubDate: '2024-01-01';
 
 - **一般的なページ**: `BaseLayout` を使用
 - **文章中心のページ**: `ProseArticleLayout` を使用
-- **ブログ記事**: `MarkdownPostLayout` を使用（`src/pages/posts/` 配下の Markdown には自動適用）
+- **ブログ記事**: `MarkdownPostLayout` を使用（記事の frontmatter の `layout` で指定）
 
 ### カスタマイズ
 
