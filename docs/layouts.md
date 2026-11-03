@@ -97,7 +97,6 @@ Markdownブログ記事専用のレイアウトです。ProseArticleLayoutを拡
 - **日付表示**: 公開日・更新日の表示（アイコン付き）
 - **画像対応**: Frontmatterで指定した画像の表示
 - **説明文表示**: 記事の概要を強調表示
-- **Callout対応**: rehype-callouts プラグインのスタイル設定
 
 ### Frontmatter対応プロパティ
 
@@ -138,8 +137,7 @@ interface Frontmatter {
 
 ### カスタムスタイル
 
-- **Callout対応**: GitHub風のコールアウトスタイル
-- **ダークモード**: Calloutのボーダーと色をダークテーマに対応
+- **Markdown 拡張**: Callout とリンクカードのスタイルはレイアウトではなく `src/styles/callout.css` / `src/styles/link-card.css`（`global.css` から読み込み）にあります。詳細は `docs/markdown-callouts.md` / `docs/markdown-link-cards.md`
 - **アイコン**: astro-icon コンポーネントでFont Awesomeアイコンを使用
 
 ### 使用例
@@ -179,5 +177,4 @@ pubDate: 2024-01-01
 ### プラグイン依存
 
 - **astro-icon**: アイコン表示
-- **rehype-callouts**: Callout機能
 - **@tailwindcss/typography**: Proseスタイリング
