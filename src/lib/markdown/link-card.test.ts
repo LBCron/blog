@@ -9,6 +9,7 @@ import {
   limitConcurrency,
   linkCard,
   renderLinkCard,
+  sanitizeText,
   type LinkCardOptions,
 } from './link-card';
 
@@ -167,27 +168,54 @@ describe('カードの内容', () => {
     );
   });
 
-  test('OG の文字列は HTML としてエスケープする（XSS 対策）', async () => {
+  test('OG の文字列に含まれるタグは無害化する（XSS 対策）', async () => {
     const html = await render(
       'https://evil.example/',
       fakeFetch({
         'https://evil.example/': htmlPage(`
-          <meta property="og:title" content="&lt;script&gt;alert(1)&lt;/script&gt;">
-          <meta property="og:description" content="&lt;img src=x onerror=alert(1)&gt; &amp; &quot;">
+          <meta property="og:title" content="前&lt;script&gt;alert(1)&lt;/script&gt;後">
+          <meta property="og:description" content="&lt;img src=x onerror=alert(1)&gt;説明 &amp; &lt;a href=&quot;javascript:alert(1)&quot; onclick=&quot;x&quot;&gt;リンク&lt;/a&gt;">
           <meta property="og:image" content="https://evil.example/x.png?&quot;onerror=&quot;alert(1)">
         `),
       }),
     );
 
-    expect(html, 'script タグとして出力されない').not.toContain('<script>');
-    expect(html, 'img タグとして出力されない').not.toContain('<img src=x');
-    expect(html, 'タイトルはエスケープされる').toContain(
-      '&lt;script&gt;alert(1)&lt;/script&gt;',
+    expect(html, 'script は中身ごと取り除かれる').toContain(
+      '<div class="link-card__title">前後</div>',
     );
-    expect(html, '説明もエスケープされる').toContain(
-      '&lt;img src=x onerror=alert(1)&gt; &amp; &quot;',
+    expect(html, 'img は取り除かれ、a は危険な属性を外して残る').toContain(
+      '<div class="link-card__description">説明 &amp; <a>リンク</a></div>',
+    );
+    expect(html, 'script タグとして出力されない').not.toContain('<script');
+    expect(html, 'onerror 属性は出力されない').not.toContain('onerror=alert');
+    expect(html, 'javascript: の URL は出力されない').not.toContain(
+      'javascript:',
     );
     expect(html, '属性値から抜け出せない').not.toContain('"onerror="');
+  });
+
+  test.each([
+    ['未知のタグはタグだけを取り除く', 'Using <tag> in X', 'Using  in X'],
+    ['script は中身ごと取り除く', 'A<script>alert(1)</script>B', 'AB'],
+    ['style も中身ごと取り除く', '<style>p{}</style>本文', '本文'],
+    ['img は取り除く', '<img src=x onerror=alert(1)>画像', '画像'],
+    ['b などの書式タグは残す', '<b>太字</b>', '<b>太字</b>'],
+    [
+      'a は危険な属性と URL を外して残す',
+      '<a href="javascript:alert(1)" onclick="x">l</a>',
+      '<a>l</a>',
+    ],
+    [
+      'タグでない < > & はエスケープする',
+      'a < b > c & d',
+      'a &lt; b &gt; c &amp; d',
+    ],
+    ['普通の文字列はそのまま', '記事の "タイトル"', '記事の "タイトル"'],
+  ])('sanitizeText: %s', (_label, input, expected) => {
+    expect(
+      sanitizeText(input),
+      `${input} は旧プラグイン（sanitize-html の既定設定）と同じ ${expected} になる`,
+    ).toBe(expected);
   });
 
   test('renderLinkCard は URL・画像パスも属性としてエスケープする', () => {

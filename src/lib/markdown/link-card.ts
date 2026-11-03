@@ -1,3 +1,4 @@
+import sanitizeHtml from 'sanitize-html';
 import {
   defineMdastPlugin,
   type MdastNode,
@@ -135,6 +136,19 @@ function escapeHtml(value: string): string {
     .replaceAll("'", '&#39;');
 }
 
+/**
+ * OG のタイトル・説明を、旧プラグインと同じく `sanitize-html` の既定の設定で
+ * 無害化する。表示を変えないため、旧プラグインと同じ結果にしている。
+ *
+ * - 許可されていないタグ（`<tag>`、`<img>` など）はタグだけを取り除き、中の文字列は残す
+ * - `<script>` / `<style>` などは中身ごと取り除く
+ * - 許可されたタグ（`<b>`、`<a>` など）は、危険な属性や URL スキームを取り除いて残す
+ * - 文字列中の `&` / `<` / `>` はエスケープする
+ */
+export function sanitizeText(value: string): string {
+  return sanitizeHtml(value);
+}
+
 function className(value: string): string {
   return `${CLASS_PREFIX}__${value}`;
 }
@@ -142,7 +156,8 @@ function className(value: string): string {
 /**
  * カードの HTML を組み立てる。構造は旧プラグインと同じで、クラス名の接頭辞だけが
  * `remark-link-card-plus__` から `link-card__` に変わる（スタイルは
- * `src/styles/link-card.css`）。外部から来た文字列と URL はすべてエスケープする。
+ * `src/styles/link-card.css`）。URL・画像パス・表示用 URL はエスケープし、
+ * タイトルと説明は {@link sanitizeText} を通す。
  */
 export function renderLinkCard(data: LinkCardData): string {
   const thumbnail = data.imageSrc
@@ -155,8 +170,8 @@ export function renderLinkCard(data: LinkCardData): string {
     : '';
   const main = `<div class="${className('main')}">
   <div class="${className('content')}">
-    <div class="${className('title')}">${escapeHtml(data.title)}</div>
-    <div class="${className('description')}">${escapeHtml(data.description)}</div>
+    <div class="${className('title')}">${sanitizeText(data.title)}</div>
+    <div class="${className('description')}">${sanitizeText(data.description)}</div>
   </div>
   <div class="${className('meta')}">
     ${favicon}
